@@ -21,8 +21,8 @@ class GameState():
         self.inCheck = False
         self.pins = []
         self.checks = []
-        self.checkMate = False
-        self.staleMate = False   
+        self.checkmate = False
+        self.stalemate = False   
         self.enpassantPossible = () # coords of possible enpassant square
         self.currentCastlingRight = CastleRights(True, True, True, True)
         self.castleRightLog = [CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks, 
@@ -84,7 +84,7 @@ class GameState():
                 self.whiteKingLocation = (move.startRow, move.startCol)
             elif move.pieceMoved == "bK":
                 self.blackKingLocation = (move.startRow, move.startCol)
-            self.checkMate = self.staleMate = False
+            self.checkmate = self.stalemate = False
             if move.isEnpassantMove: # undo enpassant
                 self.board[move.endRow][move.endCol] = '--' # leave landing square blank
                 self.board[move.startRow][move.endCol] = move.pieceCaptured
@@ -169,12 +169,14 @@ class GameState():
         else: # not in check so all moves are fine
             moves = self.getAllPossibleMoves()
             self.getCastleMoves(kingRow, kingCol, moves)
+        for move in moves:
+            print(move.startRow, move.startCol)
         if len(moves) == 0: # checkmate or stalemate
             if self.inCheck:
-                self.checkMate = True
+                self.checkmate = True
                 print("Checkmate!")
             else:
-                self.staleMate = True
+                self.stalemate = True
                 print('Stalemate!')
 
         return moves
@@ -358,13 +360,22 @@ class GameState():
             if 0 <= endRow < 8 and 0 <= endCol < 8:
                 endPiece = self.board[endRow][endCol]
                 if endPiece[0] != allyColor: # enemy or empty space valid
+
+                    boardCopy = [row[:] for row in self.board]
+                    boardCopy[r][c] = "--"
+                    boardCopy[endRow][endCol] = f"{allyColor}K"
+
                     if allyColor == 'w':
                         self.whiteKingLocation = (endRow, endCol)
                     else:
                         self.blackKingLocation = (endRow, endCol)
-                    inCheck, pins, checks = self.checkForPinsAndChecks()
+
+                    inCheck, pins, checks = self.checkForPinsAndChecks(board=boardCopy)
                     if not inCheck:
                         moves.append(Move((r,c), (endRow, endCol), self.board))
+                        print("HEYO")
+        
+
                     if allyColor == 'w':
                         self.whiteKingLocation = (r, c)
                     else:
@@ -390,10 +401,11 @@ class GameState():
             if not self.squareUnderAttack(r, c-1) and not self.squareUnderAttack(r, c-2):
                 moves.append(Move((r,c), (r,c-2), self.board, isCastleMove=True))
 
+
     '''
     Returns if player is in check a list of pins and list of checks
     '''
-    def checkForPinsAndChecks(self, location=None):
+    def checkForPinsAndChecks(self, location=None, board=None):
         pins = []
         checks = []
         inCheck = False
@@ -413,6 +425,10 @@ class GameState():
         else:
             startRow = location[0]
             startCol = location[1]
+        if board == None:
+            board = self.board
+            
+            
 
         directions = ((-1,0), (0,-1), (1,0), (0,1), (-1,-1), (-1,1), (1,-1), (1,1))
         for j in range(len(directions)):
@@ -420,9 +436,9 @@ class GameState():
             possiblePin = () # reset possible pins
             for i in range(1,8):
                 endRow = startRow + d[0] * i
-                endCol = startCol + d[1] *i
+                endCol = startCol + d[1] * i
                 if 0 <= endRow < 8 and 0 <= endCol < 8:
-                    endPiece = self.board[endRow][endCol]
+                    endPiece = board[endRow][endCol]
                     if endPiece[0] == allyColor:
                         if possiblePin == (): # is allied piece, could be pinned
                             possiblePin = (endRow, endCol, d[0], d[1])
@@ -451,7 +467,7 @@ class GameState():
             endRow = startRow + m[0]
             endCol = startCol + m[1]
             if 0 <= endRow < 8 and 0 <= endCol < 8:
-                endPiece = self.board[endRow][endCol]
+                endPiece = board[endRow][endCol]
                 if endPiece[0] == enemyColor and endPiece[1] == 'N': # enemy knight attacking king
                     inCheck = True
                     checks.append((endRow, endCol, m[0], m[1]))
