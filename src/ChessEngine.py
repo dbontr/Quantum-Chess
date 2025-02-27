@@ -93,8 +93,6 @@ class GameState():
                 self.enpassantPossible = ()
             self.castleRightLog.pop() # undo castling rights
             self.currentCastlingRight = self.castleRightLog[-1]
-            print(self.castleRightLog)
-            print(self.currentCastlingRight.wks)
             if move.isCastleMove: # undo castle move
                 if move.endCol - move.startCol == 2: # kingside
                     self.board[move.endRow][move.endCol+1] = self.board[move.endRow][move.endCol-1]
@@ -143,7 +141,6 @@ class GameState():
             kingRow = self.blackKingLocation[0]
             kingCol = self.blackKingLocation[1]
         if self.inCheck:
-            print("Check")
             if len(self.checks) == 1: # only 1 check, block check or move king
                 moves = self.getAllPossibleMoves()
                 check = self.checks[0] # check info
@@ -169,15 +166,11 @@ class GameState():
         else: # not in check so all moves are fine
             moves = self.getAllPossibleMoves()
             self.getCastleMoves(kingRow, kingCol, moves)
-        for move in moves:
-            print(move.startRow, move.startCol)
         if len(moves) == 0: # checkmate or stalemate
             if self.inCheck:
                 self.checkmate = True
-                print("Checkmate!")
             else:
                 self.stalemate = True
-                print('Stalemate!')
 
         return moves
                         
@@ -373,8 +366,6 @@ class GameState():
                     inCheck, pins, checks = self.checkForPinsAndChecks(board=boardCopy)
                     if not inCheck:
                         moves.append(Move((r,c), (endRow, endCol), self.board))
-                        print("HEYO")
-        
 
                     if allyColor == 'w':
                         self.whiteKingLocation = (r, c)
@@ -397,7 +388,7 @@ class GameState():
                 moves.append(Move((r,c), (r,c+2), self.board, isCastleMove=True))
             
     def getQueensideCastleMoves(self, r, c, moves):
-        if self.board[r][c-3] == '--' and self.board[r][c-3] == '--' and self.board[r][c-3] == '--':
+        if self.board[r][c-1] == '--' and self.board[r][c-2] == '--' and self.board[r][c-3] == '--':
             if not self.squareUnderAttack(r, c-1) and not self.squareUnderAttack(r, c-2):
                 moves.append(Move((r,c), (r,c-2), self.board, isCastleMove=True))
 
